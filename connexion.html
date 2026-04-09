@@ -88,6 +88,7 @@
     </style>
 </head>
 <body>
+    <audio id="diceSound" src="meme.mp3" preload="auto"></audio>
 
     <div id="adminWelcome" style="display: none; position: fixed; top: 20px; right: 20px; background: gold; color: black; padding: 15px 25px; border-radius: 8px; font-weight: bold; box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4); z-index: 3000; animation: slideIn 0.5s ease-out;">
     👑 ACCÈS MAÎTRE DU JEU : BIENVENUE !
@@ -191,10 +192,48 @@ document.getElementById('cheatCode').addEventListener('keypress', function (e) {
     }
 };
         // DRAG & DROP
-        let isDragging = false, startX, startY;
-        diceWrapper.onmousedown = (e) => { isDragging = true; startX = e.clientX - diceWrapper.offsetLeft; startY = e.clientY - diceWrapper.offsetTop; };
-        document.onmousemove = (e) => { if (isDragging) { diceWrapper.style.left = (e.clientX - startX) + 'px'; diceWrapper.style.top = (e.clientY - startY) + 'px'; } };
-        document.onmouseup = () => isDragging = false;
+        // --- DRAG & DROP AVEC SON ---
+let isDragging = false, startX, startY;
+let lastX, lastY; // Pour calculer la vitesse
+const diceSound = document.getElementById('diceSound');
+
+diceWrapper.onmousedown = (e) => {
+    isDragging = true;
+    startX = e.clientX - diceWrapper.offsetLeft;
+    startY = e.clientY - diceWrapper.offsetTop;
+    // On initialise les positions de départ
+    lastX = e.clientX;
+    lastY = e.clientY;
+    diceWrapper.style.cursor = 'grabbing';
+};
+
+document.onmousemove = (e) => {
+    if (!isDragging) return;
+
+    // 1. Déplacement du dé
+    diceWrapper.style.left = (e.clientX - startX) + 'px';
+    diceWrapper.style.top = (e.clientY - startY) + 'px';
+
+    // 2. Calcul de la vitesse
+    let dx = e.clientX - lastX;
+    let dy = e.clientY - lastY;
+    let speed = Math.sqrt(dx * dx + dy * dy);
+
+    // 3. Déclenchement du son si mouvement rapide
+    if (speed > 30) { 
+        diceSound.currentTime = 0; 
+        diceSound.play().catch(err => {}); 
+    }
+
+    // 4. Mise à jour pour le prochain calcul
+    lastX = e.clientX;
+    lastY = e.clientY;
+};
+
+document.onmouseup = () => {
+    isDragging = false;
+    diceWrapper.style.cursor = 'grab';
+};
 
         function forcerCombo() {
             const code = document.getElementById('cheatCode').value;
