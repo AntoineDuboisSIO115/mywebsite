@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Système Admin Combo Intégral</title>
+    <style>
+        :root {
+            --noir-profond: #1a1a1a;
+            --noir-leger: #2d2d2d;
+            --rouge-vif: #e63946;
+            --rouge-hover: #c1121f;
+            --texte-blanc: #f1faee;
+        }
+
+        body {
+            background-color: var(--noir-profond);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            min-height: 100vh; margin: 0;
+            font-family: 'Segoe UI', sans-serif; gap: 20px;
+            overflow: hidden; transition: all 0.5s;
+        }
+
+        .card {
+            background-color: var(--noir-leger); color: var(--texte-blanc);
+            padding: 2rem; border-radius: 12px; border-left: 5px solid var(--rouge-vif);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); width: 350px;
+            text-align: center; z-index: 1; transition: all 0.5s;
+        }
+
+        h1, h2 { color: var(--rouge-vif); margin-top: 0; text-transform: uppercase; letter-spacing: 2px; }
+        form { display: flex; flex-direction: column; gap: 15px; text-align: left; }
+        input { padding: 8px; border-radius: 4px; border: 1px solid #444; background: #1a1a1a; color: white; }
+
+        .btn {
+            background-color: var(--rouge-vif); color: white; border: none;
+            padding: 10px 25px; border-radius: 5px; cursor: pointer;
+            font-weight: bold; transition: all 0.3s ease; margin-top: 10px;
+        }
+
+        /* --- PANEL ADMIN (Caché) --- */
+        #adminPanel {
+            display: none; position: absolute; top: 20px; left: 180px;
+            background: var(--noir-leger); padding: 10px; border: 2px solid gold;
+            border-radius: 8px; z-index: 1000;
+        }
+
+        /* --- LE DÉ --- */
+        .dice-container {
+            position: absolute; top: 20px; left: 250px; 
+            width: 60px; height: 60px; perspective: 1000px;
+            cursor: grab; z-index: 100;
+        }
+        .dice { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 1s ease-out; }
+        .face {
+            position: absolute; width: 60px; height: 60px; background: white;
+            border: 2px solid var(--noir-leger); color: var(--rouge-vif);
+            font-size: 2rem; font-weight: bold; display: flex;
+            justify-content: center; align-items: center; border-radius: 8px;
+        }
+        .front  { transform: translateZ(30px); }
+        .back   { transform: rotateY(180deg) translateZ(30px); }
+        .right  { transform: rotateY(90deg) translateZ(30px); }
+        .left   { transform: rotateY(-90deg) translateZ(30px); }
+        .top    { transform: rotateX(90deg) translateZ(30px); }
+        .bottom { transform: rotateX(-90deg) translateZ(30px); }
+
+        .btn-top-left {
+            position: absolute; top: 20px; left: 20px;
+            background-color: var(--rouge-vif); color: white;
+            border: none; padding: 10px 20px; border-radius: 5px;
+            cursor: pointer; z-index: 101;
+        }
+
+        /* --- CLASSES D'EFFETS --- */
+        .flash-red { animation: flash 0.5s linear infinite; }
+        @keyframes flash { 0%, 100% { background-color: var(--noir-profond); } 50% { background-color: #ff0000; } }
+        .blur-effect { filter: blur(5px); }
+        .rotate-screen { transform: rotate(180deg); }
+        .invert-effect { filter: invert(1); }
+        .sepia-effect { filter: sepia(1); }
+    </style>
+</head>
+<body>
+
+
+    <div id="adminPanel">
+    <label style="color:gold; font-size: 11px; font-weight: bold; display:block; margin-bottom: 5px;">🔧 CONSOLE ADMIN</label>
+    <div style="display: flex; gap: 5px;">
+        <input type="text" id="cheatCode" placeholder="Code (ex: 666)" style="width: 100px; border: 1px solid gold;">
+        <button class="btn" style="padding: 5px 10px; margin:0; font-size: 12px;" onclick="forcerCombo()">APPLIQUER</button>
+    </div>
+</div>
+
+    <div id="videoModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; flex-direction: column;">
+    <iframe id="ytPlayer" width="80%" height="80%" src="" frameborder="0" 
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+        allowfullscreen>
+    </iframe>
+    <button onclick="fermerVideo()" class="btn" style="margin-top: 20px;">FERMER LA VIDÉO</button>
+</div>
+
+    <div class="dice-container" id="diceWrapper">
+        <div class="dice" id="dice">
+            <div class="face front">1</div>
+            <div class="face back">2</div>
+            <div class="face right">3</div>
+            <div class="face left">4</div>
+            <div class="face top">5</div>
+            <div class="face bottom">6</div>
+        </div>
+    </div>
+
+    <button class="btn-top-left" id="textBtn" onclick="lancerLeDe()">Lancer le dé 🎲</button>
+    <div id="diceResult" style="position: absolute; top: 80px; left: 25px; color: var(--rouge-vif); font-weight: bold;"></div>
+
+    <div class="card">
+        <h1>Connexion</h1>
+        <form id="loginForm">
+            <input type="text" id="loginInput" placeholder="Login (Admin)">
+            <input type="password" id="passInput" placeholder="Password (1234)">
+            <button type="submit" class="btn">VALIDER</button>
+        </form>
+    </div>
+
+    <script>
+
+        // Fonction pour activer manuellement n'importe quel combo
+function forcerCombo() {
+    const input = document.getElementById('cheatCode');
+    const code = input.value;
+
+    if (code !== "") {
+        // On affiche visuellement que l'Admin a forcé un code
+        resultDisplay.innerHTML = `<span style="color:gold">FORCE ADMIN : ${code}</span>`;
+        
+        // On déclenche l'effet immédiatement
+        verifierComboSpecial(code);
+        
+        // On vide la case pour le prochain test
+        input.value = "";
+    }
+}
+
+// Permet de valider en appuyant sur "Entrée" dans la case
+document.getElementById('cheatCode').addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') {
+        forcerCombo();
+    }
+});
+
+        const dice = document.getElementById('dice');
+        const diceWrapper = document.getElementById('diceWrapper');
+        const resultDisplay = document.getElementById('diceResult');
+        let combo = [];
+
+        // LOGIN ADMIN
+        document.getElementById('loginForm').onsubmit = (e) => {
+            e.preventDefault();
+            if (document.getElementById('loginInput').value === "Admin" && document.getElementById('passInput').value === "1234") {
+                document.getElementById('adminPanel').style.display = "block";
+                alert("Mode Admin débloqué !");
+            } else { alert("Mode utilisateur standard."); }
+        };
+
+        // DRAG & DROP
+        let isDragging = false, startX, startY;
+        diceWrapper.onmousedown = (e) => { isDragging = true; startX = e.clientX - diceWrapper.offsetLeft; startY = e.clientY - diceWrapper.offsetTop; };
+        document.onmousemove = (e) => { if (isDragging) { diceWrapper.style.left = (e.clientX - startX) + 'px'; diceWrapper.style.top = (e.clientY - startY) + 'px'; } };
+        document.onmouseup = () => isDragging = false;
+
+        function forcerCombo() {
+            const code = document.getElementById('cheatCode').value;
+            if(code) { resultDisplay.innerHTML = `ADMIN : ${code}`; verifierComboSpecial(code); }
+        }
+
+        function lancerLeDe() {
+            const result = Math.floor(Math.random() * 6) + 1;
+            combo.push(result);
+            const code = combo.join("");
+            const rotations = { 1: '0,0', 2: '0,180', 3: '0,-90', 4: '0,90', 5: '-90,0', 6: '90,0' };
+            const [x, y] = rotations[result].split(',');
+            dice.style.transform = `rotateX(${Math.random()*1000}deg) rotateY(${Math.random()*1000}deg)`;
+
+            setTimeout(() => {
+                dice.style.transform = `rotateX(${x}deg) rotateY(${y}deg)`;
+                resultDisplay.innerHTML = `Combo : ${code}`;
+                if (result === 6) document.body.classList.toggle('flash-red');
+                if (result === 1) document.body.classList.toggle('sepia-effect');
+                if (combo.length >= 2) verifierComboSpecial(code);
+                if (combo.length === 3) { combo = []; setTimeout(() => resultDisplay.innerHTML = "Prêt !", 1500); }
+            }, 1000);
+        }
+
+        function verifierComboSpecial(code) {
+            const body = document.body;
+            const cards = document.querySelectorAll('.card');
+
+            if (code === "123") { cards.forEach(c => c.style.transform = "translateY(-100px)"); } 
+            else if (code === "666") { body.innerHTML = "<h1 style='color:red; font-size:5rem;'>🔥 ENFER 🔥</h1>"; } 
+            else if (code === "266") { ouvrirVideo('https://www.youtube.com/shorts/KONjktPTdI8?feature=share'); } 
+            else if (code === "13") { body.classList.toggle('invert-effect'); } 
+            else if (code === "44") { body.classList.toggle('rotate-screen'); }
+            else if (code === "222") { cards.forEach(c => c.style.borderRadius = "50%"); }
+            else if (code === "55") { body.classList.toggle('blur-effect'); } 
+            else if (code === "556") { window.location.href = "about:blank"; }
+            else if (code === "404") { 
+                document.querySelectorAll('h1, h2, p, label').forEach(el => el.innerText = "01101000 01101011"); 
+            }
+            else if (code === "221") {
+                const btn = document.querySelector('.btn');
+                btn.onmouseover = () => {
+                    btn.style.position = "absolute";
+                    btn.style.top = Math.random() * 80 + "vh"; btn.style.left = Math.random() * 80 + "vw";
+                };
+            }
+        }
+
+       function ouvrirVideo(idVideo) {
+    const modal = document.getElementById('videoModal');
+    const player = document.getElementById('ytPlayer');
+    
+    // On extrait l'ID proprement même si tu mets un lien complet ou juste l'ID
+    let videoID = idVideo;
+    if (idVideo.includes('v=')) videoID = idVideo.split('v=')[1].split('&')[0];
+    else if (idVideo.includes('shorts/')) videoID = idVideo.split('shorts/')[1].split('?')[0];
+    else if (idVideo.includes('embed/')) videoID = idVideo.split('embed/')[1].split('?')[0];
+
+    // On force l'URL embed avec autoplay et surtout l'origine
+    // Le paramètre origin aide à éviter certaines erreurs de configuration
+    player.src = `https://www.youtube.com/embed/${videoID}?autoplay=1&mute=0&controls=1&rel=0`;
+    
+    modal.style.display = "flex";
+}
+
+function fermerVideo() {
+    const modal = document.getElementById('videoModal');
+    const player = document.getElementById('ytPlayer');
+    player.src = ""; // Très important : vide la source pour couper le son !
+    modal.style.display = "none";
+}
+    </script>
+</body>
+</html>
