@@ -79,10 +79,19 @@
         .rotate-screen { transform: rotate(180deg); }
         .invert-effect { filter: invert(1); }
         .sepia-effect { filter: sepia(1); }
+
+        @keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
     </style>
 </head>
 <body>
 
+    <div id="adminWelcome" style="display: none; position: fixed; top: 20px; right: 20px; background: gold; color: black; padding: 15px 25px; border-radius: 8px; font-weight: bold; box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4); z-index: 3000; animation: slideIn 0.5s ease-out;">
+    👑 ACCÈS MAÎTRE DU JEU : BIENVENUE !
+</div>
 
     <div id="adminPanel">
     <label style="color:gold; font-size: 11px; font-weight: bold; display:block; margin-bottom: 5px;">🔧 CONSOLE ADMIN</label>
@@ -117,8 +126,8 @@
     <div class="card">
         <h1>Connexion</h1>
         <form id="loginForm">
-            <input type="text" id="loginInput" placeholder="Login (Admin)">
-            <input type="password" id="passInput" placeholder="Password (1234)">
+            <input type="text" id="loginInput" placeholder="Login (Admin/nimda)">
+            <input type="password" id="passInput" placeholder="Password (1234/21.19.5.18)">
             <button type="submit" class="btn">VALIDER</button>
         </form>
     </div>
@@ -155,14 +164,32 @@ document.getElementById('cheatCode').addEventListener('keypress', function (e) {
         let combo = [];
 
         // LOGIN ADMIN
-        document.getElementById('loginForm').onsubmit = (e) => {
-            e.preventDefault();
-            if (document.getElementById('loginInput').value === "Admin" && document.getElementById('passInput').value === "1234") {
-                document.getElementById('adminPanel').style.display = "block";
-                alert("Mode Admin débloqué !");
-            } else { alert("Mode utilisateur standard."); }
-        };
 
+       document.getElementById('loginForm').onsubmit = (e) => {
+    e.preventDefault();
+    const user = document.getElementById('loginInput').value;
+    const pass = document.getElementById('passInput').value;
+
+    if (user === "user" && pass === "4321") {
+        // Affiche le panel admin doré
+        document.getElementById('adminPanel').style.display = "block";
+        
+        // Affiche le message de bienvenue
+        const welcome = document.getElementById('adminWelcome');
+        welcome.style.display = "block";
+        
+        // Fait disparaître le message automatiquement après 5 secondes
+        setTimeout(() => {
+            welcome.style.transition = "opacity 1s";
+            welcome.style.opacity = "0";
+            setTimeout(() => { welcome.style.display = "none"; }, 1000);
+        }, 5000);
+
+        alert("Mode Administrateur activé !");
+    } else {
+        alert("Connecté en tant qu'utilisateur standard.");
+    }
+};
         // DRAG & DROP
         let isDragging = false, startX, startY;
         diceWrapper.onmousedown = (e) => { isDragging = true; startX = e.clientX - diceWrapper.offsetLeft; startY = e.clientY - diceWrapper.offsetTop; };
